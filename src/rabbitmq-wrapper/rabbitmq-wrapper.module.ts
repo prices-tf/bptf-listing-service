@@ -27,6 +27,7 @@ import { Config, RabbitMQConfig } from '../common/config/configuration';
             },
           ],
           uri: `amqp://${rabbitmqConfig.username}:${rabbitmqConfig.password}@${rabbitmqConfig.host}:${rabbitmqConfig.port}/${rabbitmqConfig.vhost}`,
+          prefetchCount: 1,
         };
       },
     }),
