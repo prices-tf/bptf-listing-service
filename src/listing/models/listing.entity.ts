@@ -34,9 +34,6 @@ export class Listing {
   @Column()
   readonly isOffers: boolean;
 
-  @Column()
-  readonly details: string;
-
   @Column({
     type: 'float',
   })
