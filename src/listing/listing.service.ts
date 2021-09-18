@@ -72,22 +72,40 @@ export class ListingService {
           });
         });
 
+        const deduplicate: { [key: string]: Listing } = {};
+
+        for (let i = 0; i < listings.length; i++) {
+          const element = listings[i];
+
+          const id =
+            element.sku + '_' + element.assetid + '_' + element.steamid64;
+
+          if (
+            deduplicate[id] === undefined ||
+            deduplicate[id].createdAt < element.createdAt
+          ) {
+            deduplicate[id] = element;
+          }
+        }
+
+        const deduplicated = Object.values(deduplicate);
+
         await transactionalEntityManager
           .createQueryBuilder()
           .insert()
           .into(Listing)
-          .values(listings)
+          .values(deduplicated)
           .onConflict(
             `("sku", "steamid64", "assetid") DO UPDATE SET
-            "item" = excluded."item",
-            "isAutomatic" = excluded."isAutomatic",
-            "isBuyout" = excluded."isBuyout",
-            "isOffers" = excluded."isOffers",
-            "details" = excluded."details",
-            "currenciesKeys" = excluded."currenciesKeys",
-            "currenciesHalfScrap" = excluded."currenciesHalfScrap",
-            "createdAt" = excluded."createdAt",
-            "bumpedAt" = excluded."bumpedAt"
+              "item" = excluded."item",
+              "isAutomatic" = excluded."isAutomatic",
+              "isBuyout" = excluded."isBuyout",
+              "isOffers" = excluded."isOffers",
+              "details" = excluded."details",
+              "currenciesKeys" = excluded."currenciesKeys",
+              "currenciesHalfScrap" = excluded."currenciesHalfScrap",
+              "createdAt" = excluded."createdAt",
+              "bumpedAt" = excluded."bumpedAt"
           `,
           )
           .execute();
@@ -100,7 +118,7 @@ export class ListingService {
           }),
         );
 
-        return listings;
+        return deduplicated;
       },
     );
 
