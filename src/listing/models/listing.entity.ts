@@ -1,9 +1,7 @@
 import { ListingIntent } from '../enums/listing-intent.enum';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-@Entity({
-  name: 'listing2',
-})
+@Entity()
 export class Listing {
   @PrimaryColumn()
   readonly sku: string;
