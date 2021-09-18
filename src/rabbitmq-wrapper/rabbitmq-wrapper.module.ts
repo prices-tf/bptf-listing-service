@@ -21,6 +21,10 @@ import { Config, RabbitMQConfig } from '../common/config/configuration';
               name: 'bptf-listing.updated',
               type: 'fanout',
             },
+            {
+              name: 'bptf-listing.handled',
+              type: 'fanout',
+            },
           ],
           uri: `amqp://${rabbitmqConfig.username}:${rabbitmqConfig.password}@${rabbitmqConfig.host}:${rabbitmqConfig.port}/${rabbitmqConfig.vhost}`,
         };

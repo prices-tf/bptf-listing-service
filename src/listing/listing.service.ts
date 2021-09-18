@@ -35,49 +35,50 @@ export class ListingService {
   async handleSnapshot(snapshot: ExchangeSnapshot): Promise<void> {
     const snapshotCreatedAt = new Date(snapshot.createdAt);
 
-    await this.connection.transaction(async (transactionalEntityManager) => {
-      const match = await transactionalEntityManager.findOne(Snapshot, {
-        where: {
-          sku: snapshot.sku,
-          createdAt: MoreThanOrEqual(snapshotCreatedAt),
-        },
-        lock: {
-          mode: 'pessimistic_write',
-        },
-      });
-
-      if (match !== undefined) {
-        // Found a snapshot that is newer than the one from the event, skip this one
-        return;
-      }
-
-      // The snapshot from the event is newer, save listings
-      const listings = snapshot.listings.map((listing) => {
-        return this.repository.create({
-          sku: snapshot.sku,
-          steamid64: listing.steamid64,
-          assetid: listing.intent === 'sell' ? listing.item.id : -1,
-          item: listing.item,
-          intent:
-            listing.intent === 'buy' ? ListingIntent.BUY : ListingIntent.SELL,
-          isAutomatic: listing.isAutomatic,
-          isBuyout: listing.isBuyout,
-          isOffers: listing.isOffers,
-          details: listing.details,
-          currenciesKeys: listing.currenciesKeys,
-          currenciesHalfScrap: listing.currenciesHalfScrap,
-          createdAt: new Date(listing.createdAt),
-          bumpedAt: new Date(listing.bumpedAt),
+    const listings = await this.connection.transaction(
+      async (transactionalEntityManager) => {
+        const match = await transactionalEntityManager.findOne(Snapshot, {
+          where: {
+            sku: snapshot.sku,
+            createdAt: MoreThanOrEqual(snapshotCreatedAt),
+          },
+          lock: {
+            mode: 'pessimistic_write',
+          },
         });
-      });
 
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(Listing)
-        .values(listings)
-        .onConflict(
-          `("sku", "steamid64", "assetid") DO UPDATE SET
+        if (match !== undefined) {
+          // Found a snapshot that is newer than the one from the event, skip this one
+          return;
+        }
+
+        // The snapshot from the event is newer, save listings
+        const listings = snapshot.listings.map((listing) => {
+          return this.repository.create({
+            sku: snapshot.sku,
+            steamid64: listing.steamid64,
+            assetid: listing.intent === 'sell' ? listing.item.id : -1,
+            item: listing.item,
+            intent:
+              listing.intent === 'buy' ? ListingIntent.BUY : ListingIntent.SELL,
+            isAutomatic: listing.isAutomatic,
+            isBuyout: listing.isBuyout,
+            isOffers: listing.isOffers,
+            details: listing.details,
+            currenciesKeys: listing.currenciesKeys,
+            currenciesHalfScrap: listing.currenciesHalfScrap,
+            createdAt: new Date(listing.createdAt),
+            bumpedAt: new Date(listing.bumpedAt),
+          });
+        });
+
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(Listing)
+          .values(listings)
+          .onConflict(
+            `("sku", "steamid64", "assetid") DO UPDATE SET
             "item" = excluded."item",
             "isAutomatic" = excluded."isAutomatic",
             "isBuyout" = excluded."isBuyout",
@@ -88,16 +89,26 @@ export class ListingService {
             "createdAt" = excluded."createdAt",
             "bumpedAt" = excluded."bumpedAt"
           `,
-        )
-        .execute();
+          )
+          .execute();
 
-      await transactionalEntityManager.save(
-        Snapshot,
-        transactionalEntityManager.create(Snapshot, {
-          sku: snapshot.sku,
-          createdAt: snapshotCreatedAt,
-        }),
-      );
-    });
+        await transactionalEntityManager.save(
+          Snapshot,
+          transactionalEntityManager.create(Snapshot, {
+            sku: snapshot.sku,
+            createdAt: snapshotCreatedAt,
+          }),
+        );
+
+        return listings;
+      },
+    );
+
+    for (let i = 0; i < listings.length; i++) {
+      const listing = listings[i];
+      await this.amqpConnection.publish('bptf-listing.updated', '*', listing);
+    }
+
+    await this.amqpConnection.publish('bptf-listing.handled', '*', snapshot);
   }
 }
