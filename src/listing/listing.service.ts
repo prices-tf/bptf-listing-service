@@ -35,7 +35,7 @@ export class ListingService {
   async handleSnapshot(snapshot: ExchangeSnapshot): Promise<void> {
     const snapshotCreatedAt = new Date(snapshot.createdAt);
 
-    const listings = await this.connection.transaction(
+    const result = await this.connection.transaction(
       async (transactionalEntityManager) => {
         const match = await transactionalEntityManager.findOne(Snapshot, {
           where: {
@@ -49,7 +49,7 @@ export class ListingService {
 
         if (match !== undefined) {
           // Found a snapshot that is newer than the one from the event, skip this one
-          return;
+          return null;
         }
 
         // The snapshot from the event is newer, save listings
@@ -104,11 +104,13 @@ export class ListingService {
       },
     );
 
-    for (let i = 0; i < listings.length; i++) {
-      const listing = listings[i];
-      await this.amqpConnection.publish('bptf-listing.updated', '*', listing);
-    }
+    if (result !== null) {
+      for (let i = 0; i < result.length; i++) {
+        const listing = result[i];
+        await this.amqpConnection.publish('bptf-listing.updated', '*', listing);
+      }
 
-    await this.amqpConnection.publish('bptf-listing.handled', '*', snapshot);
+      await this.amqpConnection.publish('bptf-listing.handled', '*', snapshot);
+    }
   }
 }
