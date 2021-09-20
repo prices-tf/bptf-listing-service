@@ -49,4 +49,10 @@ export class Listing {
 
   @Column()
   readonly bumpedAt: Date;
+
+  @Column()
+  readonly firstSeenAt: Date;
+
+  @Column()
+  readonly lastSeenAt: Date;
 }

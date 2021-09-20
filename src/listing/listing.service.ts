@@ -68,6 +68,8 @@ export class ListingService {
             currenciesHalfScrap: listing.currenciesHalfScrap,
             createdAt: new Date(listing.createdAt),
             bumpedAt: new Date(listing.bumpedAt),
+            firstSeenAt: snapshotCreatedAt,
+            lastSeenAt: snapshotCreatedAt,
           });
         });
 
@@ -103,7 +105,8 @@ export class ListingService {
               "currenciesKeys" = excluded."currenciesKeys",
               "currenciesHalfScrap" = excluded."currenciesHalfScrap",
               "createdAt" = excluded."createdAt",
-              "bumpedAt" = excluded."bumpedAt"
+              "bumpedAt" = excluded."bumpedAt",
+              "lastSeenAt" = excluded."lastSeenAt"
           `,
           )
           .execute();
