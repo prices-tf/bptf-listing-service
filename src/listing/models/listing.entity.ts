@@ -1,5 +1,5 @@
 import { ListingIntent } from '../enums/listing-intent.enum';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Listing {
@@ -19,6 +19,7 @@ export class Listing {
   })
   readonly item: any;
 
+  @Index()
   @Column({
     type: 'enum',
     enum: ListingIntent,
