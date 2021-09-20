@@ -24,6 +24,7 @@ export class ListingController {
         limit: query.limit ?? 100,
       },
       sku,
+      query.intent,
       query.order,
     );
   }

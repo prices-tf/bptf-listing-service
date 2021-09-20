@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsPositive } from 'class-validator';
+import { ListingIntent } from '../enums/listing-intent.enum';
 
 enum OrderEnum {
   ASC = 'ASC',
@@ -18,6 +19,9 @@ export class GetListingsDto {
   @IsPositive()
   @Type(() => Number)
   readonly limit: number;
+
+  @IsEnum(ListingIntent)
+  readonly intent: ListingIntent;
 
   @IsOptional()
   @IsEnum(OrderEnum)

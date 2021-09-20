@@ -29,11 +29,13 @@ export class ListingService {
   paginate(
     options: IPaginationOptions,
     sku: string,
+    intent: ListingIntent,
     order: 'ASC' | 'DESC' = 'DESC',
   ): Promise<Pagination<Listing>> {
     return paginate<Listing>(this.repository, options, {
       where: {
         sku,
+        intent,
       },
       order: {
         lastSeenAt: order,
