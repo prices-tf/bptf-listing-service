@@ -10,6 +10,11 @@ import {
 import { ListingIntent } from './enums/listing-intent.enum';
 import { Snapshot } from './models/snapshot.entity';
 import { Snapshot as ExchangeSnapshot } from './interfaces/snapshot.interface';
+import {
+  IPaginationOptions,
+  paginate,
+  Pagination,
+} from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class ListingService {
@@ -20,6 +25,21 @@ export class ListingService {
     @InjectConnection()
     private readonly connection: Connection,
   ) {}
+
+  paginate(
+    options: IPaginationOptions,
+    sku: string,
+    order: 'ASC' | 'DESC' = 'DESC',
+  ): Promise<Pagination<Listing>> {
+    return paginate<Listing>(this.repository, options, {
+      where: {
+        sku,
+      },
+      order: {
+        lastSeenAt: order,
+      },
+    });
+  }
 
   @RabbitSubscribe({
     exchange: 'bptf-snapshot.created',
