@@ -52,7 +52,7 @@ export class ListingService {
     },
     errorHandler: requeueErrorHandler,
   })
-  async handleSnapshot(snapshot: ExchangeSnapshot): Promise<void> {
+  private async handleSnapshot(snapshot: ExchangeSnapshot): Promise<void> {
     const snapshotCreatedAt = new Date(snapshot.createdAt);
 
     const result = await this.connection.transaction(
