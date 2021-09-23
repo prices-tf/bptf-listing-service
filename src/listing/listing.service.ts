@@ -150,8 +150,8 @@ export class ListingService {
         const listing = result[i];
         await this.amqpConnection.publish('bptf-listing.updated', '*', listing);
       }
-
-      await this.amqpConnection.publish('bptf-listing.handled', '*', snapshot);
     }
+
+    await this.amqpConnection.publish('bptf-listing.handled', '*', snapshot);
   }
 }
