@@ -2,6 +2,7 @@ import { ListingIntent } from '../enums/listing-intent.enum';
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 
 @Entity()
+@Index(['sku', 'intent', 'lastSeenAt'])
 export class Listing {
   @PrimaryColumn()
   readonly sku: string;
@@ -19,7 +20,6 @@ export class Listing {
   })
   readonly item: any;
 
-  @Index()
   @Column({
     type: 'enum',
     enum: ListingIntent,
