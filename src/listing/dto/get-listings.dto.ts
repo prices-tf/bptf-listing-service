@@ -20,6 +20,7 @@ export class GetListingsDto {
   @Type(() => Number)
   readonly limit: number;
 
+  @IsOptional()
   @IsEnum(ListingIntent)
   readonly intent: ListingIntent;
 

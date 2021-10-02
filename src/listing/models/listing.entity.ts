@@ -5,55 +5,55 @@ import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 @Index(['sku', 'intent', 'lastSeenAt'])
 export class Listing {
   @PrimaryColumn()
-  readonly sku: string;
+  sku: string;
 
   @PrimaryColumn()
-  readonly steamid64: string;
+  steamid64: string;
 
   @PrimaryColumn({
     type: 'bigint',
   })
-  readonly assetid: string;
+  assetid: string;
 
   @Column({
     type: 'jsonb',
   })
-  readonly item: any;
+  item: any;
 
   @Column({
     type: 'enum',
     enum: ListingIntent,
   })
-  readonly intent: ListingIntent;
+  intent: ListingIntent;
 
   @Column()
-  readonly isAutomatic: boolean;
+  isAutomatic: boolean;
 
   @Column()
-  readonly isBuyout: boolean;
+  isBuyout: boolean;
 
   @Column()
-  readonly isOffers: boolean;
+  isOffers: boolean;
 
   @Column({
     type: 'float',
   })
-  readonly currenciesKeys: number;
+  currenciesKeys: number;
 
   @Column({
     type: 'int',
   })
-  readonly currenciesHalfScrap: number;
+  currenciesHalfScrap: number;
 
   @Column()
-  readonly createdAt: Date;
+  createdAt: Date;
 
   @Column()
-  readonly bumpedAt: Date;
+  bumpedAt: Date;
 
   @Column()
-  readonly firstSeenAt: Date;
+  firstSeenAt: Date;
 
   @Column()
-  readonly lastSeenAt: Date;
+  lastSeenAt: Date;
 }

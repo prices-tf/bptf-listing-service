@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Connection, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  Connection,
+  FindConditions,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
 import { Listing } from './models/listing.entity';
 import {
@@ -29,14 +34,19 @@ export class ListingService {
   paginate(
     options: IPaginationOptions,
     sku: string,
-    intent: ListingIntent,
+    intent?: ListingIntent,
     order: 'ASC' | 'DESC' = 'DESC',
   ): Promise<Pagination<Listing>> {
+    const where: FindConditions<Listing> = {
+      sku,
+    };
+
+    if (intent) {
+      where.intent = intent;
+    }
+
     return paginate<Listing>(this.repository, options, {
-      where: {
-        sku,
-        intent,
-      },
+      where,
       order: {
         lastSeenAt: order,
       },
