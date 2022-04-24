@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from './../src/app.module';
 import { Connection } from 'typeorm';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -20,7 +21,9 @@ describe('AppController (e2e)', () => {
     await connection.synchronize();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    const amqpConnection = app.get(AmqpConnection);
+    await amqpConnection.managedConnection.close();
     return app.close();
   });
 
