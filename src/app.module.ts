@@ -8,6 +8,7 @@ import { ListingModule } from './listing/listing.module';
 import { Listing } from './listing/models/listing.entity';
 import { Snapshot } from './listing/models/snapshot.entity';
 import { RabbitMQWrapperModule } from './rabbitmq-wrapper/rabbitmq-wrapper.module';
+import { TradeOfferUrlModule } from './tradeofferurl/tradeofferurl.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { RabbitMQWrapperModule } from './rabbitmq-wrapper/rabbitmq-wrapper.modul
     RabbitMQWrapperModule,
     HealthModule,
     ListingModule,
+    TradeOfferUrlModule,
   ],
 })
 export class AppModule {}

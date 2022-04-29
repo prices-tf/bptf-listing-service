@@ -20,10 +20,13 @@ import {
   paginate,
   Pagination,
 } from 'nestjs-typeorm-paginate';
+import { ListingUpdateEvent } from './interfaces/bptf-event.interface';
+import { TradeOfferUrlService } from '../tradeofferurl/tradeofferurl.service';
 
 @Injectable()
 export class ListingService {
   constructor(
+    private readonly tradeofferurlService: TradeOfferUrlService,
     @InjectRepository(Listing)
     private readonly repository: Repository<Listing>,
     private readonly amqpConnection: AmqpConnection,
@@ -51,6 +54,50 @@ export class ListingService {
         lastSeenAt: order,
       },
     });
+  }
+
+  @RabbitSubscribe({
+    exchange: 'bptf-event.created',
+    routingKey: 'listing-update',
+    queue: 'saveListingsFromWebsocket',
+    queueOptions: {
+      arguments: {
+        'x-queue-type': 'quorum',
+      },
+    },
+    errorHandler: requeueErrorHandler,
+  })
+  private async handleListingUpdate(event: ListingUpdateEvent): Promise<void> {
+    /* const item = {
+      defindex: event.payload.item.defindex,
+      quality: event.payload.item.quality.id,
+      craftable: event.payload.item.craftable === true,
+      killstreak: event.payload.item.killstreakTier ?? 0,
+      australium: event.payload.item.australium ?? false,
+      festive: event.payload.item.festivized ?? false,
+      effect: event.payload.item.particle?.id ?? null,
+      paintkit: event.payload.item.texture?.id ?? null,
+      wear: event.payload.item.wearTier?.id ?? null,
+      quality2: event.payload.item.elevatedQuality?.id ?? null,
+      crateseries: null,
+      target: null,
+      output: event.payload.item.recipe?.outputItem?.defindex ?? null,
+      outputQuality: event.payload.item.recipe?.outputItem?.quality ?? null,
+    }; */
+
+    const url = new URL(event.payload.user.tradeOfferUrl);
+
+    const partner = url.searchParams.get('partner');
+    const token = url.searchParams.get('token');
+
+    if (token && partner) {
+      const partnerParsed = parseInt(partner);
+
+      return this.tradeofferurlService.saveUrl({
+        partner: partnerParsed,
+        token,
+      });
+    }
   }
 
   @RabbitSubscribe({
