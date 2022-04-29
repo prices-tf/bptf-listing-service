@@ -25,6 +25,10 @@ import { Config, RabbitMQConfig } from '../common/config/configuration';
               name: 'bptf-listing.handled',
               type: 'fanout',
             },
+            {
+              name: 'bptf-event.created',
+              type: 'direct',
+            },
           ],
           uri: `amqp://${rabbitmqConfig.username}:${rabbitmqConfig.password}@${rabbitmqConfig.host}:${rabbitmqConfig.port}/${rabbitmqConfig.vhost}`,
           prefetchCount: 1,
