@@ -85,6 +85,10 @@ export class ListingService {
       outputQuality: event.payload.item.recipe?.outputItem?.quality ?? null,
     }; */
 
+    if (event.payload.user.tradeOfferUrl === null) {
+      return;
+    }
+
     const url = new URL(event.payload.user.tradeOfferUrl);
 
     const partner = url.searchParams.get('partner');
