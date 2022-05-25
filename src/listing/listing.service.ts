@@ -21,12 +21,10 @@ import {
   Pagination,
 } from 'nestjs-typeorm-paginate';
 import { ListingUpdateEvent } from './interfaces/bptf-event.interface';
-import { TradeOfferUrlService } from '../tradeofferurl/tradeofferurl.service';
 
 @Injectable()
 export class ListingService {
   constructor(
-    private readonly tradeofferurlService: TradeOfferUrlService,
     @InjectRepository(Listing)
     private readonly repository: Repository<Listing>,
     private readonly amqpConnection: AmqpConnection,
@@ -56,7 +54,7 @@ export class ListingService {
     });
   }
 
-  @RabbitSubscribe({
+  /* @RabbitSubscribe({
     exchange: 'bptf-event.created',
     routingKey: 'listing-update',
     queue: 'saveListingsFromWebsocket',
@@ -68,7 +66,7 @@ export class ListingService {
     errorHandler: requeueErrorHandler,
   })
   private async handleListingUpdate(event: ListingUpdateEvent): Promise<void> {
-    /* const item = {
+    const item = {
       defindex: event.payload.item.defindex,
       quality: event.payload.item.quality.id,
       craftable: event.payload.item.craftable === true,
@@ -83,26 +81,8 @@ export class ListingService {
       target: null,
       output: event.payload.item.recipe?.outputItem?.defindex ?? null,
       outputQuality: event.payload.item.recipe?.outputItem?.quality ?? null,
-    }; */
-
-    if (event.payload.user.tradeOfferUrl === null) {
-      return;
-    }
-
-    const url = new URL(event.payload.user.tradeOfferUrl);
-
-    const partner = url.searchParams.get('partner');
-    const token = url.searchParams.get('token');
-
-    if (token && partner) {
-      const partnerParsed = parseInt(partner);
-
-      return this.tradeofferurlService.saveUrl({
-        partner: partnerParsed,
-        token,
-      });
-    }
-  }
+    };
+  } */
 
   @RabbitSubscribe({
     exchange: 'bptf-snapshot.created',

@@ -4,14 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Listing } from '../listing/models/listing.entity';
 import { RabbitMQWrapperModule } from '../rabbitmq-wrapper/rabbitmq-wrapper.module';
 import { ListingController } from './listing.controller';
-import { TradeOfferUrlModule } from '../tradeofferurl/tradeofferurl.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Listing]),
-    RabbitMQWrapperModule,
-    TradeOfferUrlModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Listing]), RabbitMQWrapperModule],
   providers: [ListingService],
   controllers: [ListingController],
 })
