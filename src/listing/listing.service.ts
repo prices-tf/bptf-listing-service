@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   Connection,
   FindConditions,
@@ -24,6 +24,8 @@ import { ListingUpdateEvent } from './interfaces/bptf-event.interface';
 
 @Injectable()
 export class ListingService {
+  private readonly logger = new Logger(ListingService.name);
+
   constructor(
     @InjectRepository(Listing)
     private readonly repository: Repository<Listing>,
@@ -96,6 +98,8 @@ export class ListingService {
     errorHandler: requeueErrorHandler,
   })
   private async handleSnapshot(snapshot: ExchangeSnapshot): Promise<void> {
+    this.logger.log('Received snapshot for ' + snapshot.sku);
+
     const snapshotCreatedAt = new Date(snapshot.createdAt);
 
     const result = await this.connection.transaction(
