@@ -6,7 +6,6 @@ import { validation } from './common/config/validation';
 import { HealthModule } from './health/health.module';
 import { ListingModule } from './listing/listing.module';
 import { Listing } from './listing/models/listing.entity';
-import { Snapshot } from './listing/models/snapshot.entity';
 import { RabbitMQWrapperModule } from './rabbitmq-wrapper/rabbitmq-wrapper.module';
 
 @Module({
@@ -30,7 +29,7 @@ import { RabbitMQWrapperModule } from './rabbitmq-wrapper/rabbitmq-wrapper.modul
           username: databaseConfig.username,
           password: databaseConfig.password,
           database: databaseConfig.database,
-          entities: [Snapshot, Listing],
+          entities: [Listing],
           autoLoadModels: true,
           synchronize: process.env.TYPEORM_SYNCRONIZE === 'true',
           keepConnectionAlive: true,

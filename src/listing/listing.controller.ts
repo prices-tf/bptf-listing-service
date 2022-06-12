@@ -9,7 +9,7 @@ export class ListingController {
   constructor(private readonly listingService: ListingService) {}
 
   @Get('/sku/:sku')
-  getListings(
+  getListingsBySKU(
     @Param('sku') sku: string,
     @Query(
       new ValidationPipe({

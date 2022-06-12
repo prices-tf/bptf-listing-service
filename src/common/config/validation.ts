@@ -14,7 +14,6 @@ const validation = Joi.object({
   RABBITMQ_USERNAME: Joi.string().required(),
   RABBITMQ_PASSWORD: Joi.string().required(),
   RABBITMQ_VHOST: Joi.string().allow('').required(),
-  TRADEOFFERURL_SERVICE_URL: Joi.string().required(),
 });
 
 export { validation };

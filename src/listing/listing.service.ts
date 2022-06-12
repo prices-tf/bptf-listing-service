@@ -1,26 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
-import {
-  Connection,
-  FindConditions,
-  MoreThanOrEqual,
-  Repository,
-} from 'typeorm';
-import { InjectConnection, InjectRepository } from '@nestjs/typeorm';
-import { Listing } from './models/listing.entity';
 import {
   AmqpConnection,
   RabbitSubscribe,
   requeueErrorHandler,
 } from '@golevelup/nestjs-rabbitmq';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import {
+  DataSource,
+  FindOptionsWhere,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
+import SKU from '@tf2autobot/tf2-sku';
+import { Item, ListingEvent } from './interfaces/bptf.interface';
+import { Listing } from './models/listing.entity';
 import { ListingIntent } from './enums/listing-intent.enum';
-import { Snapshot } from './models/snapshot.entity';
-import { Snapshot as ExchangeSnapshot } from './interfaces/snapshot.interface';
+import ObjectID from 'bson-objectid';
 import {
   IPaginationOptions,
   paginate,
   Pagination,
 } from 'nestjs-typeorm-paginate';
-import { ListingUpdateEvent } from './interfaces/bptf-event.interface';
 
 @Injectable()
 export class ListingService {
@@ -30,8 +30,7 @@ export class ListingService {
     @InjectRepository(Listing)
     private readonly repository: Repository<Listing>,
     private readonly amqpConnection: AmqpConnection,
-    @InjectConnection()
-    private readonly connection: Connection,
+    private readonly dataSource: DataSource,
   ) {}
 
   paginate(
@@ -40,7 +39,7 @@ export class ListingService {
     intent?: ListingIntent,
     order: 'ASC' | 'DESC' = 'DESC',
   ): Promise<Pagination<Listing>> {
-    const where: FindConditions<Listing> = {
+    const where: FindOptionsWhere<Listing> = {
       sku,
     };
 
@@ -56,10 +55,10 @@ export class ListingService {
     });
   }
 
-  /* @RabbitSubscribe({
+  @RabbitSubscribe({
     exchange: 'bptf-event.created',
     routingKey: 'listing-update',
-    queue: 'saveListingsFromWebsocket',
+    queue: 'saveListingsFromEvents',
     queueOptions: {
       arguments: {
         'x-queue-type': 'quorum',
@@ -67,29 +66,14 @@ export class ListingService {
     },
     errorHandler: requeueErrorHandler,
   })
-  private async handleListingUpdate(event: ListingUpdateEvent): Promise<void> {
-    const item = {
-      defindex: event.payload.item.defindex,
-      quality: event.payload.item.quality.id,
-      craftable: event.payload.item.craftable === true,
-      killstreak: event.payload.item.killstreakTier ?? 0,
-      australium: event.payload.item.australium ?? false,
-      festive: event.payload.item.festivized ?? false,
-      effect: event.payload.item.particle?.id ?? null,
-      paintkit: event.payload.item.texture?.id ?? null,
-      wear: event.payload.item.wearTier?.id ?? null,
-      quality2: event.payload.item.elevatedQuality?.id ?? null,
-      crateseries: null,
-      target: null,
-      output: event.payload.item.recipe?.outputItem?.defindex ?? null,
-      outputQuality: event.payload.item.recipe?.outputItem?.quality ?? null,
-    };
-  } */
+  private saveListingFromEvent(event: ListingEvent): Promise<void> {
+    return this.handleListingEvent(event, false);
+  }
 
   @RabbitSubscribe({
-    exchange: 'bptf-snapshot.created',
-    routingKey: '*',
-    queue: 'saveListingsFromSnapshot',
+    exchange: 'bptf-event.created',
+    routingKey: 'listing-delete',
+    queue: 'deleteListingsFromEvents',
     queueOptions: {
       arguments: {
         'x-queue-type': 'quorum',
@@ -97,106 +81,194 @@ export class ListingService {
     },
     errorHandler: requeueErrorHandler,
   })
-  private async handleSnapshot(snapshot: ExchangeSnapshot): Promise<void> {
-    this.logger.log('Received snapshot for ' + snapshot.sku);
+  private deleteListingFromEvent(event: ListingEvent): Promise<void> {
+    return this.handleListingEvent(event, true);
+  }
 
-    const snapshotCreatedAt = new Date(snapshot.createdAt);
+  /**
+   * Handle a listing event.
+   * @param event Event object
+   * @param isDeleteEvent If true, this is a delete event
+   * @returns Promise that resolves when listing is handeled
+   */
+  private async handleListingEvent(
+    event: ListingEvent,
+    isDeleteEvent: boolean,
+  ): Promise<any> {
+    if (event.payload.appid != 440) {
+      // Ignore non-TF2 listings
+      return;
+    } else if (
+      event.payload.currencies.keys === undefined &&
+      event.payload.currencies.metal === undefined
+    ) {
+      // We only want items that are listed for keys and metal
+      return;
+    }
 
-    const result = await this.connection.transaction(
-      async (transactionalEntityManager) => {
-        const match = await transactionalEntityManager.findOne(Snapshot, {
-          where: {
-            sku: snapshot.sku,
-            createdAt: MoreThanOrEqual(snapshotCreatedAt),
-          },
-          lock: {
-            mode: 'pessimistic_write',
-          },
-        });
+    // Generate the SKU from the item object
+    const sku = this.getSKUFromItem(event.payload.item);
 
-        if (match !== undefined) {
-          // Found a snapshot that is newer than the one from the event, skip this one
-          return null;
+    // Get ObjectID from event
+    const id = ObjectID(event.id);
+    // Get timestamp for when the event was created
+    const eventTime = id.getTimestamp();
+
+    if (event.payload.user.id === '76561198120070906') {
+      console.log({
+        id: event.payload.id,
+        sku,
+        steamid64: event.payload.user.id,
+        item: event.payload.item,
+        intent:
+          event.payload.intent === 'buy'
+            ? ListingIntent.BUY
+            : ListingIntent.SELL,
+        isAutomatic: event.payload.userAgent !== undefined,
+        isBuyout: event.payload.buyoutOnly ?? true,
+        isOffers: event.payload.tradeOffersPreffered ?? true,
+        currenciesKeys: event.payload.currencies.keys ?? 0,
+        currenciesHalfScrap:
+          event.payload.currencies.metal === undefined
+            ? 0
+            : Math.round(event.payload.currencies.metal * 9 * 2),
+        comment: event.payload.details
+          ? event.payload.details.slice(0, 200)
+          : null,
+        createdAt: new Date(event.payload.listedAt * 1000),
+        bumpedAt: new Date(event.payload.bumpedAt * 1000),
+        firstSeenAt: eventTime,
+        lastSeenAt: eventTime,
+        isDeleted: isDeleteEvent,
+      });
+    }
+
+    // Create entity
+    const listing = this.repository.create({
+      id: event.payload.id,
+      sku,
+      steamid64: event.payload.user.id,
+      item: event.payload.item,
+      intent:
+        event.payload.intent === 'buy' ? ListingIntent.BUY : ListingIntent.SELL,
+      isAutomatic: event.payload.userAgent !== undefined,
+      isBuyout: event.payload.buyoutOnly ?? true,
+      isOffers: event.payload.tradeOffersPreffered ?? true,
+      currenciesKeys: event.payload.currencies.keys ?? 0,
+      currenciesHalfScrap:
+        event.payload.currencies.metal === undefined
+          ? 0
+          : Math.round(event.payload.currencies.metal * 9 * 2),
+      comment: event.payload.details
+        ? event.payload.details.slice(0, 200)
+        : null,
+      createdAt: new Date(event.payload.listedAt * 1000),
+      bumpedAt: new Date(event.payload.bumpedAt * 1000),
+      firstSeenAt: eventTime,
+      lastSeenAt: eventTime,
+      isDeleted: isDeleteEvent,
+    });
+
+    // Create transaction
+    const result = await this.dataSource.transaction(async (manager) => {
+      // Find existing listing
+      const existingListing = await manager.findOne(Listing, {
+        where: {
+          // Find by id
+          id: listing.id,
+          // and lastSeenAt is less than the event timestamp
+          lastSeenAt: MoreThanOrEqual(listing.lastSeenAt),
+        },
+        lock: {
+          // Lock the row to prevent other processes from querying or updating it
+          mode: 'pessimistic_write',
+        },
+      });
+
+      if (existingListing) {
+        // The listing saved in the database is newer than the event, so we can ignore it
+        return null;
+      }
+
+      // Save the listing, overwrite if it already exists
+      const result = await manager
+        .createQueryBuilder()
+        .insert()
+        .into(Listing)
+        .values(listing)
+        // Don't overwrite firstSeenAt
+        .orUpdate(
+          [
+            'item',
+            'intent',
+            'isAutomatic',
+            'isBuyout',
+            'isOffers',
+            'currenciesKeys',
+            'currenciesHalfScrap',
+            'comment',
+            'createdAt',
+            'bumpedAt',
+            'lastSeenAt',
+            'isDeleted',
+          ],
+          ['id'],
+        )
+        .returning(['firstSeenAt'])
+        .execute();
+
+      // Update firstSeenAt with the actual value
+      listing.firstSeenAt = result.raw[0].firstSeenAt;
+
+      return listing;
+    });
+
+    if (result) {
+      const exchange = isDeleteEvent
+        ? 'bptf-listing.deleted'
+        : 'bptf-listing.updated';
+
+      await this.amqpConnection.publish(exchange, '*', result);
+    }
+  }
+
+  private getSKUFromItem(item: Item): string {
+    const parsedItem = {
+      defindex: item.defindex,
+      quality: item.quality.id,
+      craftable: item.craftable === true,
+      killstreak: item.killstreakTier ?? 0,
+      australium: item.australium ?? false,
+      festive: item.festivized ?? false,
+      effect: item.particle?.id ?? null,
+      paintkit: item.texture?.id ?? null,
+      wear: item.wearTier?.id ?? null,
+      quality2: item.elevatedQuality?.id ?? null,
+      crateseries: item.crateSeries ?? null,
+      target: null,
+      output: item.recipe?.outputItem?.defindex ?? null,
+      outputQuality: item.recipe?.outputItem?.quality.id ?? null,
+    };
+
+    if (item.priceindex) {
+      if (parsedItem.defindex === 9258) {
+        // Unusualifier
+        parsedItem.target = parseInt(item.priceindex, 10);
+      } else if (item.recipe) {
+        const parts = item.priceindex.split('-');
+        if (parts.length === 3) {
+          parsedItem.target = parseInt(parts.slice(-1)[0], 10);
         }
-
-        // The snapshot from the event is newer, save listings
-        const listings = snapshot.listings.map((listing) => {
-          return this.repository.create({
-            sku: snapshot.sku,
-            steamid64: listing.steamid64,
-            assetid: listing.intent === 'sell' ? listing.item.id : -1,
-            item: listing.item,
-            intent:
-              listing.intent === 'buy' ? ListingIntent.BUY : ListingIntent.SELL,
-            isAutomatic: listing.isAutomatic,
-            isBuyout: listing.isBuyout,
-            isOffers: listing.isOffers,
-            currenciesKeys: listing.currenciesKeys,
-            currenciesHalfScrap: listing.currenciesHalfScrap,
-            createdAt: new Date(listing.createdAt),
-            bumpedAt: new Date(listing.bumpedAt),
-            firstSeenAt: snapshotCreatedAt,
-            lastSeenAt: snapshotCreatedAt,
-          });
-        });
-
-        const deduplicate: { [key: string]: Listing } = {};
-
-        for (let i = 0; i < listings.length; i++) {
-          const element = listings[i];
-
-          const id =
-            element.sku + '_' + element.assetid + '_' + element.steamid64;
-
-          if (
-            deduplicate[id] === undefined ||
-            deduplicate[id].createdAt < element.createdAt
-          ) {
-            deduplicate[id] = element;
-          }
-        }
-
-        const deduplicated = Object.values(deduplicate);
-
-        await transactionalEntityManager
-          .createQueryBuilder()
-          .insert()
-          .into(Listing)
-          .values(deduplicated)
-          .onConflict(
-            `("sku", "steamid64", "assetid") DO UPDATE SET
-              "item" = excluded."item",
-              "isAutomatic" = excluded."isAutomatic",
-              "isBuyout" = excluded."isBuyout",
-              "isOffers" = excluded."isOffers",
-              "currenciesKeys" = excluded."currenciesKeys",
-              "currenciesHalfScrap" = excluded."currenciesHalfScrap",
-              "createdAt" = excluded."createdAt",
-              "bumpedAt" = excluded."bumpedAt",
-              "lastSeenAt" = excluded."lastSeenAt"
-          `,
-          )
-          .execute();
-
-        await transactionalEntityManager.save(
-          Snapshot,
-          transactionalEntityManager.create(Snapshot, {
-            sku: snapshot.sku,
-            createdAt: snapshotCreatedAt,
-          }),
-        );
-
-        return deduplicated;
-      },
-    );
-
-    if (result !== null) {
-      for (let i = 0; i < result.length; i++) {
-        const listing = result[i];
-        await this.amqpConnection.publish('bptf-listing.updated', '*', listing);
       }
     }
 
-    await this.amqpConnection.publish('bptf-listing.handled', '*', snapshot);
+    // Killstreak Kit Fabricators
+    if (parsedItem.defindex === 20003) {
+      parsedItem.killstreak = 3;
+    } else if (item.defindex === 20002) {
+      parsedItem.killstreak = 2;
+    }
+
+    return SKU.fromObject(parsedItem);
   }
 }

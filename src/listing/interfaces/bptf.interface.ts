@@ -6,12 +6,14 @@ export interface Event {
   payload: any;
 }
 
-interface Item {
+export interface Item {
   appid: number;
   australium?: boolean;
   baseName: string;
+  name: string;
   class: string[];
   craftable: boolean;
+  crateSeries?: number;
   recipe?: Recipe;
   defindex: number;
   festivized?: boolean;
@@ -55,7 +57,7 @@ interface Item {
 
 interface Recipe {
   inputItems: unknown[];
-  outputItem: Item;
+  outputItem: Item | null;
   targetItem: {
     itemName: string;
     imageUrl: string;
@@ -82,8 +84,8 @@ interface Paint {
   color: string;
 }
 
-export interface ListingUpdateEvent extends Event {
-  event: 'listing-update';
+export interface ListingEvent extends Event {
+  event: 'listing-update' | 'listing-delete';
   payload: {
     appid: number;
     listedAt: number;
@@ -93,6 +95,7 @@ export interface ListingUpdateEvent extends Event {
     currencies: {
       keys?: number;
       metal?: number;
+      usd?: number;
     };
     details: string;
     id: string;
@@ -102,7 +105,12 @@ export interface ListingUpdateEvent extends Event {
     status: string;
     steamid: string;
     tradeOffersPreffered: boolean;
+    userAgent?: {
+      client: string;
+      lastPulse: number;
+    };
     user: {
+      id: string;
       tradeOfferUrl: string;
     };
   };

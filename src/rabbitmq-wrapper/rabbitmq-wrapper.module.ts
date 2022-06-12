@@ -14,20 +14,21 @@ import { Config, RabbitMQConfig } from '../common/config/configuration';
         return {
           exchanges: [
             {
-              name: 'bptf-snapshot.created',
-              type: 'fanout',
+              name: 'bptf-event.created',
+              type: 'direct',
             },
             {
               name: 'bptf-listing.updated',
               type: 'fanout',
             },
             {
-              name: 'bptf-listing.handled',
+              name: 'bptf-listing.deleted',
               type: 'fanout',
             },
           ],
           uri: `amqp://${rabbitmqConfig.username}:${rabbitmqConfig.password}@${rabbitmqConfig.host}:${rabbitmqConfig.port}/${rabbitmqConfig.vhost}`,
-          prefetchCount: 1,
+          prefetchCount: 10,
+          connectionInitOptions: { wait: false },
         };
       },
     }),

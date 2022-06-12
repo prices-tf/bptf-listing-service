@@ -2,7 +2,6 @@ export interface Config {
   port: number;
   database: DatabaseConfig;
   rabbitmq: RabbitMQConfig;
-  services: Services;
 }
 
 export interface DatabaseConfig {
@@ -19,10 +18,6 @@ export interface RabbitMQConfig {
   username: string;
   password: string;
   vhost: string;
-}
-
-export interface Services {
-  tradeofferurl: string;
 }
 
 export default (): Config => {
@@ -44,9 +39,6 @@ export default (): Config => {
       username: process.env.RABBITMQ_USERNAME,
       password: process.env.RABBITMQ_PASSWORD,
       vhost: process.env.RABBITMQ_VHOST,
-    },
-    services: {
-      tradeofferurl: process.env.TRADEOFFERURL_SERVICE_URL,
     },
   };
 };
