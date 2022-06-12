@@ -18,6 +18,7 @@ export interface RabbitMQConfig {
   username: string;
   password: string;
   vhost: string;
+  prefetchCount: number;
 }
 
 export default (): Config => {
@@ -39,6 +40,7 @@ export default (): Config => {
       username: process.env.RABBITMQ_USERNAME,
       password: process.env.RABBITMQ_PASSWORD,
       vhost: process.env.RABBITMQ_VHOST,
+      prefetchCount: parseInt(process.env.RABBITMQ_PREFETCH_COUNT, 10),
     },
   };
 };
