@@ -114,35 +114,6 @@ export class ListingService {
     // Get timestamp for when the event was created
     const eventTime = id.getTimestamp();
 
-    if (event.payload.user.id === '76561198120070906') {
-      console.log({
-        id: event.payload.id,
-        sku,
-        steamid64: event.payload.user.id,
-        item: event.payload.item,
-        intent:
-          event.payload.intent === 'buy'
-            ? ListingIntent.BUY
-            : ListingIntent.SELL,
-        isAutomatic: event.payload.userAgent !== undefined,
-        isBuyout: event.payload.buyoutOnly ?? true,
-        isOffers: event.payload.tradeOffersPreffered ?? true,
-        currenciesKeys: event.payload.currencies.keys ?? 0,
-        currenciesHalfScrap:
-          event.payload.currencies.metal === undefined
-            ? 0
-            : Math.round(event.payload.currencies.metal * 9 * 2),
-        comment: event.payload.details
-          ? event.payload.details.slice(0, 200)
-          : null,
-        createdAt: new Date(event.payload.listedAt * 1000),
-        bumpedAt: new Date(event.payload.bumpedAt * 1000),
-        firstSeenAt: eventTime,
-        lastSeenAt: eventTime,
-        isDeleted: isDeleteEvent,
-      });
-    }
-
     // Create entity
     const listing = this.repository.create({
       id: event.payload.id,
