@@ -84,34 +84,35 @@ interface Paint {
   color: string;
 }
 
+export interface Listing {
+  appid: number;
+  listedAt: number;
+  bumpedAt: number;
+  buyoutOnly?: boolean;
+  count: number;
+  currencies: {
+    keys?: number;
+    metal?: number;
+    usd?: number;
+  };
+  details: string;
+  id: string;
+  intent: string;
+  item: Item;
+  source: string;
+  status: string;
+  tradeOffersPreferred?: boolean;
+  userAgent?: {
+    client: string;
+    lastPulse: number;
+  };
+  user: {
+    id: string;
+    tradeOfferUrl: string;
+  };
+}
+
 export interface ListingEvent extends Event {
   event: 'listing-update' | 'listing-delete';
-  payload: {
-    appid: number;
-    listedAt: number;
-    bumpedAt: number;
-    buyoutOnly: boolean;
-    count: number;
-    currencies: {
-      keys?: number;
-      metal?: number;
-      usd?: number;
-    };
-    details: string;
-    id: string;
-    intent: string;
-    item: Item;
-    source: string;
-    status: string;
-    steamid: string;
-    tradeOffersPreffered: boolean;
-    userAgent?: {
-      client: string;
-      lastPulse: number;
-    };
-    user: {
-      id: string;
-      tradeOfferUrl: string;
-    };
-  };
+  payload: Listing;
 }
