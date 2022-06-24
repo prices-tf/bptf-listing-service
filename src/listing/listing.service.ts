@@ -235,6 +235,11 @@ export class ListingService {
       isDeleted,
     });
 
+    if (entity.currenciesHalfScrap > 2147483647) {
+      // Don't save if value is greater than 4 byte integer size (postgres integer type)
+      return null;
+    }
+
     // Create transaction
     const result = await this.dataSource.transaction(async (manager) => {
       // Find existing listing
