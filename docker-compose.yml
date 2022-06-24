@@ -16,3 +16,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: test
       RABBITMQ_DEFAULT_PASS: test
+  redis:
+    image: redis:alpine
+    command: redis-server --requirepass test
+    ports:
+      - '6379:6379'

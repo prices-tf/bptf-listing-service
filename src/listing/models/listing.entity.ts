@@ -43,7 +43,7 @@ export class Listing {
   currenciesKeys: number;
 
   @Column({
-    type: 'bigint',
+    type: 'int',
   })
   currenciesHalfScrap: number;
 

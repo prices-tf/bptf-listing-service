@@ -15,6 +15,11 @@ const validation = Joi.object({
   RABBITMQ_PASSWORD: Joi.string().required(),
   RABBITMQ_VHOST: Joi.string().allow('').required(),
   RABBITMQ_PREFETCH_COUNT: Joi.number().positive().min(1).default(10),
+  REDIS_IS_SENTINEL: Joi.boolean().optional(),
+  REDIS_HOST: Joi.string().required(),
+  REDIS_PORT: Joi.number().integer().required(),
+  REDIS_PASSWORD: Joi.string().optional(),
+  REDIS_SET: Joi.string().optional(),
 });
 
 export { validation };
