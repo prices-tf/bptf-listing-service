@@ -175,6 +175,7 @@ export class ListingService {
     errorHandler: requeueErrorHandler,
   })
   private saveListingFromEvent(event: ListingEvent): Promise<void> {
+    console.log(event.payload);
     return this.handleListingEvent(event, false);
   }
 
