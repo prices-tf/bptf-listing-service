@@ -9,7 +9,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 export class RabbitMQService implements OnModuleDestroy {
   constructor(private readonly amqpConnection: AmqpConnection) {}
 
-  onModuleDestroy() {
+  async onModuleDestroy(): Promise<void> {
     // Cancel consumers on module destroy
 
     const consumers: Record<
@@ -19,10 +19,12 @@ export class RabbitMQService implements OnModuleDestroy {
       // @ts-ignore
     > = this.amqpConnection._consumers;
 
-    for (const [consumerTag, consumer] of Object.entries(consumers)) {
-      if (consumer.type === 'subscribe') {
-        this.amqpConnection.cancelConsumer(consumerTag);
-      }
-    }
+    await Promise.all(
+      Object.entries(consumers).map(([consumerTag, consumer]) => {
+        if (consumer.type === 'subscribe') {
+          return this.amqpConnection.cancelConsumer(consumerTag);
+        }
+      }),
+    );
   }
 }
