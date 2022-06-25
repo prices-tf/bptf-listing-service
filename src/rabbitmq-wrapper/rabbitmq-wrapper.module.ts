@@ -2,6 +2,7 @@ import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Config, RabbitMQConfig } from '../common/config/configuration';
+import { RabbitMQService } from './rabbitmq-wrapper.service';
 
 @Module({
   imports: [
@@ -34,5 +35,6 @@ import { Config, RabbitMQConfig } from '../common/config/configuration';
     }),
   ],
   exports: [RabbitMQModule],
+  providers: [RabbitMQService],
 })
 export class RabbitMQWrapperModule {}
