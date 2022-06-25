@@ -48,7 +48,7 @@ import { BullModule } from '@nestjs/bull';
         }
 
         return {
-          redis: redisConfig,
+          redis: redisOptions,
           prefix: 'bull',
         };
       },
