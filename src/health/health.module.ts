@@ -10,7 +10,7 @@ import { BullHealthIndicator } from './bull.health';
   imports: [
     TerminusModule,
     BullModule.registerQueue({
-      name: 'get-listing',
+      name: 'listings',
     }),
     RabbitMQWrapperModule,
   ],

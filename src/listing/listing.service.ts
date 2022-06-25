@@ -33,7 +33,7 @@ export class ListingService {
   private readonly logger = new Logger(ListingService.name);
 
   constructor(
-    @InjectQueue('get-listing')
+    @InjectQueue('listings')
     private readonly queue: Queue<{
       id: string;
     }>,

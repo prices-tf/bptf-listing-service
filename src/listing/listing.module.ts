@@ -10,7 +10,7 @@ import { BullModule } from '@nestjs/bull';
   imports: [
     TypeOrmModule.forFeature([Listing]),
     BullModule.registerQueue({
-      name: 'get-listing',
+      name: 'listings',
     }),
     RabbitMQWrapperModule,
   ],

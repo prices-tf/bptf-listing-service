@@ -10,7 +10,7 @@ import { Queue } from 'bull';
 @Injectable()
 export class BullHealthIndicator extends HealthIndicator {
   constructor(
-    @InjectQueue('get-listing')
+    @InjectQueue('listings')
     private readonly queue: Queue,
   ) {
     super();
