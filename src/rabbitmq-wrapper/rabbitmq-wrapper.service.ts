@@ -12,6 +12,10 @@ export class RabbitMQService implements OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     // Cancel consumers on module destroy
 
+    if (!this.amqpConnection.connected) {
+      return;
+    }
+
     const consumers: Record<
       ConsumerTag,
       ConsumerHandler<unknown, unknown>
