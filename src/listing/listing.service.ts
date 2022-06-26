@@ -179,6 +179,7 @@ export class ListingService {
     return this.handleListingEvent(event, false).catch((err) => {
       this.logger.error('Error handling listing update: ' + event.payload.id);
       console.error(err);
+      console.log(JSON.stringify(event));
       return new Nack(true);
     });
   }
@@ -198,6 +199,7 @@ export class ListingService {
     return this.handleListingEvent(event, true).catch((err) => {
       this.logger.error('Error handling listing delete: ' + event.payload.id);
       console.error(err);
+      console.log(JSON.stringify(event));
       return new Nack(true);
     });
   }
