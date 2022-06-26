@@ -177,7 +177,7 @@ export class ListingService {
   })
   private saveListingFromEvent(event: ListingEvent): Promise<void> {
     return this.handleListingEvent(event, false).catch((err) => {
-      this.logger.error('Error handling listing update: ' + err.listingId);
+      this.logger.error('Error handling listing update: ' + event.payload.id);
       console.error(err);
       return new Nack(true);
     });
@@ -196,7 +196,7 @@ export class ListingService {
   })
   private deleteListingFromEvent(event: ListingEvent): Promise<void> {
     return this.handleListingEvent(event, true).catch((err) => {
-      this.logger.error('Error handling listing delete: ' + err.listingId);
+      this.logger.error('Error handling listing delete: ' + event.payload.id);
       console.error(err);
       return new Nack(true);
     });
