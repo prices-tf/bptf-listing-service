@@ -218,6 +218,9 @@ export class ListingService {
     ) {
       // We only want items that are listed for keys and metal
       return null;
+    } else if (listing.item.quality === null) {
+      // TODO: Validate listings
+      return null;
     }
 
     // Generate the SKU from the item object
