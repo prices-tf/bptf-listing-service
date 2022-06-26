@@ -1,5 +1,6 @@
 import {
   AmqpConnection,
+  Nack,
   RabbitSubscribe,
   requeueErrorHandler,
 } from '@golevelup/nestjs-rabbitmq';
@@ -175,7 +176,11 @@ export class ListingService {
     errorHandler: requeueErrorHandler,
   })
   private saveListingFromEvent(event: ListingEvent): Promise<void> {
-    return this.handleListingEvent(event, false);
+    return this.handleListingEvent(event, false).catch((err) => {
+      this.logger.error('Error handling listing update: ' + err.listingId);
+      console.error(err);
+      return new Nack(true);
+    });
   }
 
   @RabbitSubscribe({
@@ -190,7 +195,11 @@ export class ListingService {
     errorHandler: requeueErrorHandler,
   })
   private deleteListingFromEvent(event: ListingEvent): Promise<void> {
-    return this.handleListingEvent(event, true);
+    return this.handleListingEvent(event, true).catch((err) => {
+      this.logger.error('Error handling listing delete: ' + err.listingId);
+      console.error(err);
+      return new Nack(true);
+    });
   }
 
   async saveListing(
