@@ -136,6 +136,7 @@ export class ListingService {
   async setListingAsDeleted(listingId: string): Promise<void> {
     await this.repository.update(listingId, {
       isDeleted: true,
+      lastCheckedAt: new Date(),
     });
   }
 
