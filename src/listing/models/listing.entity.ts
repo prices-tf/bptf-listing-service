@@ -3,7 +3,8 @@ import { ListingIntent } from '../enums/listing-intent.enum';
 import { Item } from '../interfaces/bptf.interface';
 
 @Entity()
-@Index(['sku', 'intent'])
+@Index(['sku', 'intent', 'isDeleted', 'lastSeenAt'])
+@Index(['lastCheckedAt'])
 export class Listing {
   @PrimaryColumn()
   id: string;
@@ -73,6 +74,12 @@ export class Listing {
    */
   @Column()
   lastSeenAt: Date;
+
+  /**
+   * When the listing was last checked
+   */
+  @Column()
+  lastCheckedAt: Date;
 
   /**
    * Whether the listing is deleted or not

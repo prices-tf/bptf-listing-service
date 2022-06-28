@@ -1,10 +1,21 @@
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsPositive } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsPositive,
+} from 'class-validator';
 import { ListingIntent } from '../enums/listing-intent.enum';
 
-enum OrderEnum {
+export enum OrderEnum {
   ASC = 'ASC',
   DESC = 'DESC',
+}
+
+export enum OrderByEnum {
+  lastSeenAt = 'lastSeenAt',
+  lastCheckedAt = 'lastCheckedAt',
 }
 
 export class GetListingsDto {
@@ -25,6 +36,23 @@ export class GetListingsDto {
   readonly intent: ListingIntent;
 
   @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') {
+      return true;
+    } else if (value === 'false') {
+      return false;
+    }
+
+    return value;
+  })
+  readonly deleted: boolean;
+
+  @IsOptional()
   @IsEnum(OrderEnum)
   readonly order: OrderEnum;
+
+  @IsOptional()
+  @IsEnum(OrderByEnum)
+  readonly orderBy: OrderByEnum;
 }

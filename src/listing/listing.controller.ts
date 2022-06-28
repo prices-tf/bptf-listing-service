@@ -19,9 +19,8 @@ import { Listing } from './models/listing.entity';
 export class ListingController {
   constructor(private readonly listingService: ListingService) {}
 
-  @Get('/sku/:sku')
-  getListingsBySKU(
-    @Param('sku') sku: string,
+  @Get()
+  getListings(
     @Query(
       new ValidationPipe({
         transform: true,
@@ -34,9 +33,33 @@ export class ListingController {
         page: query.page ?? 1,
         limit: query.limit ?? 100,
       },
+      query.intent,
+      query.deleted,
+      query.order,
+      query.orderBy,
+    );
+  }
+
+  @Get('/sku/:sku')
+  getListingsBySKU(
+    @Param('sku') sku: string,
+    @Query(
+      new ValidationPipe({
+        transform: true,
+      }),
+    )
+    query: GetListingsDto,
+  ): Promise<Pagination<Listing>> {
+    return this.listingService.paginateBySKU(
+      {
+        page: query.page ?? 1,
+        limit: query.limit ?? 100,
+      },
       sku,
       query.intent,
+      query.deleted,
       query.order,
+      query.orderBy,
     );
   }
 

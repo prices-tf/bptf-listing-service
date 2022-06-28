@@ -8,6 +8,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
+  FindManyOptions,
   FindOptionsWhere,
   MoreThanOrEqual,
   Repository,
@@ -28,6 +29,7 @@ import {
 } from 'nestjs-typeorm-paginate';
 import { InjectQueue } from '@nestjs/bull';
 import { JobOptions, Queue } from 'bull';
+import { OrderByEnum, OrderEnum } from './dto/get-listings.dto';
 
 @Injectable()
 export class ListingService {
@@ -46,9 +48,40 @@ export class ListingService {
 
   paginate(
     options: IPaginationOptions,
+    intent?: ListingIntent,
+    isDeleted?: boolean,
+    order = OrderEnum.DESC,
+    orderBy = OrderByEnum.lastSeenAt,
+  ): Promise<Pagination<Listing>> {
+    const where: FindOptionsWhere<Listing> = {};
+
+    if (intent) {
+      where.intent = intent;
+    }
+
+    if (isDeleted !== undefined) {
+      where.isDeleted = isDeleted;
+    }
+
+    const searchOptions: FindManyOptions<Listing> = {
+      where,
+      order: {
+        id: order,
+      },
+    };
+
+    searchOptions.order[orderBy] = order;
+
+    return paginate<Listing>(this.repository, options, searchOptions);
+  }
+
+  paginateBySKU(
+    options: IPaginationOptions,
     sku: string,
     intent?: ListingIntent,
-    order: 'ASC' | 'DESC' = 'DESC',
+    isDeleted?: boolean,
+    order = OrderEnum.DESC,
+    orderBy = OrderByEnum.lastSeenAt,
   ): Promise<Pagination<Listing>> {
     const where: FindOptionsWhere<Listing> = {
       sku,
@@ -58,12 +91,18 @@ export class ListingService {
       where.intent = intent;
     }
 
-    return paginate<Listing>(this.repository, options, {
+    if (isDeleted !== undefined) {
+      where.isDeleted = isDeleted;
+    }
+
+    const searchOptions: FindManyOptions<Listing> = {
       where,
-      order: {
-        lastSeenAt: order,
-      },
-    });
+      order: {},
+    };
+
+    searchOptions.order[orderBy] = order;
+
+    return paginate<Listing>(this.repository, options, searchOptions);
   }
 
   async getListingById(listingId: string): Promise<Listing> {
@@ -246,6 +285,7 @@ export class ListingService {
       bumpedAt: new Date(listing.bumpedAt * 1000),
       firstSeenAt: time,
       lastSeenAt: time,
+      lastCheckedAt: time,
       isDeleted,
     });
 
@@ -295,6 +335,7 @@ export class ListingService {
             'createdAt',
             'bumpedAt',
             'lastSeenAt',
+            'lastCheckedAt',
             'isDeleted',
           ],
           ['id'],
