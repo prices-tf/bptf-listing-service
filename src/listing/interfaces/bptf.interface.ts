@@ -95,7 +95,7 @@ export interface Listing {
     metal?: number;
     usd?: number;
   };
-  details: string;
+  details?: string;
   id: string;
   intent: string;
   item: Item;

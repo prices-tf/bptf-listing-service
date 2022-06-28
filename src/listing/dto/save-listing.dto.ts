@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { IsSteamID64 } from '../../common/decorator/validation/IsSteamID64';
@@ -33,6 +34,7 @@ class UserDto {
   banned: boolean;
 
   @IsDefined()
+  @ValidateIf((_, value) => value !== null)
   @IsUrl()
   tradeOfferUrl: string;
 
@@ -91,9 +93,9 @@ class ListingDto {
   @IsBoolean()
   buyoutOnly?: boolean;
 
-  @IsDefined()
+  @IsOptional()
   @IsString()
-  details: string;
+  details?: string;
 
   @IsDefined()
   @IsNumber()

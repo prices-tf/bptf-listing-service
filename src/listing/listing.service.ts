@@ -280,7 +280,10 @@ export class ListingService {
         listing.currencies.metal === undefined
           ? 0
           : Math.round(listing.currencies.metal * 9 * 2),
-      comment: listing.details ? listing.details.slice(0, 200) : null,
+      comment:
+        typeof listing.details === 'string'
+          ? listing.details.slice(0, 200)
+          : null,
       createdAt: new Date(listing.listedAt * 1000),
       bumpedAt: new Date(listing.bumpedAt * 1000),
       firstSeenAt: time,
