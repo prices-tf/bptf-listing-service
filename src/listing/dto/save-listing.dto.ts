@@ -121,9 +121,9 @@ class ListingDto {
   @IsString()
   status: string;
 
-  @IsDefined()
+  @IsOptional()
   @IsString()
-  source: string;
+  source?: string;
 
   @IsDefined()
   item: any;

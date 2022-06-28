@@ -99,7 +99,7 @@ export interface Listing {
   id: string;
   intent: string;
   item: Item;
-  source: string;
+  source?: string;
   status: string;
   tradeOffersPreferred?: boolean;
   userAgent?: {
