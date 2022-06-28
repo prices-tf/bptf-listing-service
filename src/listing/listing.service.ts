@@ -72,7 +72,14 @@ export class ListingService {
 
     searchOptions.order[orderBy] = order;
 
-    return paginate<Listing>(this.repository, options, searchOptions);
+    const queryBuilder = this.dataSource
+      .createQueryBuilder()
+      .select('listing')
+      .from(Listing, 'listing')
+      .where(where)
+      .orderBy(`"${orderBy}",id`, order);
+
+    return paginate<Listing>(queryBuilder, options);
   }
 
   paginateBySKU(
@@ -102,7 +109,14 @@ export class ListingService {
 
     searchOptions.order[orderBy] = order;
 
-    return paginate<Listing>(this.repository, options, searchOptions);
+    const queryBuilder = this.dataSource
+      .createQueryBuilder()
+      .select('listing')
+      .from(Listing, 'listing')
+      .where(where)
+      .orderBy(`"${orderBy}",id`, order);
+
+    return paginate<Listing>(queryBuilder, options);
   }
 
   async getListingById(listingId: string): Promise<Listing> {
