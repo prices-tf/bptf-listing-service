@@ -32,6 +32,7 @@ export class ListingController {
       {
         page: query.page ?? 1,
         limit: query.limit ?? 100,
+        countQueries: false,
       },
       query.intent,
       query.deleted,
@@ -54,6 +55,7 @@ export class ListingController {
       {
         page: query.page ?? 1,
         limit: query.limit ?? 100,
+        countQueries: false,
       },
       sku,
       query.intent,
