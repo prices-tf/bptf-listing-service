@@ -30,6 +30,7 @@ import {
 import { InjectQueue } from '@nestjs/bull';
 import { JobOptions, Queue } from 'bull';
 import { OrderByEnum, OrderEnum } from './dto/get-listings.dto';
+import { Snapshot } from './interfaces/snapshot.interface';
 
 @Injectable()
 export class ListingService {
@@ -219,6 +220,127 @@ export class ListingService {
   }
 
   @RabbitSubscribe({
+    exchange: 'bptf-snapshot.created',
+    routingKey: '*',
+    queue: 'saveListingsFromSnapshot',
+    queueOptions: {
+      arguments: {
+        'x-queue-type': 'quorum',
+      },
+    },
+    errorHandler: requeueErrorHandler,
+  })
+  private async saveListingsFromSnapshot(snapshot: Snapshot): Promise<void> {
+    const snapshotCreatedAt = new Date(snapshot.createdAt);
+
+    const listings = snapshot.listings.map((listing) => {
+      return this.dataSource.getRepository(Listing).create({
+        id: listing.id,
+        sku: listing.sku,
+        steamid64: listing.steamid64,
+        item: listing.item,
+        intent:
+          listing.intent === 'sell' ? ListingIntent.SELL : ListingIntent.BUY,
+        isAutomatic: listing.isAutomatic,
+        isBuyout: listing.isBuyout,
+        isOffers: listing.isOffers,
+        comment: listing.comment,
+        currenciesKeys: listing.currenciesKeys,
+        currenciesHalfScrap: listing.currenciesHalfScrap,
+        createdAt: new Date(listing.createdAt),
+        bumpedAt: new Date(listing.bumpedAt),
+        firstSeenAt: snapshotCreatedAt,
+        lastSeenAt: snapshotCreatedAt,
+        lastCheckedAt: snapshotCreatedAt,
+        isDeleted: false,
+      });
+    });
+
+    await this.saveListings(listings);
+
+    await this.amqpConnection.publish('bptf-snapshot.handled', '*', snapshot);
+  }
+
+  private async saveListings(listings: Listing[]): Promise<Listing[]> {
+    // Don't save if value is greater than 4 byte integer size (postgres integer type)
+    const filtered = listings.filter(
+      (listing) => listing.currenciesHalfScrap <= 2147483647,
+    );
+
+    // Create transaction
+    const result = await this.dataSource.transaction(async (manager) => {
+      // reverse for loop
+      for (let i = filtered.length - 1; i >= 0; i--) {
+        const listing = filtered[i];
+
+        // Find existing listing
+        const existingListing = await manager.findOne(Listing, {
+          where: {
+            // Find by id
+            id: listing.id,
+            // and lastSeenAt is less than the event timestamp
+            lastSeenAt: MoreThanOrEqual(listing.lastSeenAt),
+          },
+          lock: {
+            // Lock the row to prevent other processes from querying or updating it
+            mode: 'pessimistic_write',
+          },
+        });
+
+        if (existingListing) {
+          // The listing saved in the database is newer than the event, so we can ignore it
+          filtered.splice(i, 1);
+          continue;
+        }
+
+        // Save the listing, overwrite if it already exists
+        const result = await manager
+          .createQueryBuilder()
+          .insert()
+          .into(Listing)
+          .values(listing)
+          // Don't overwrite firstSeenAt
+          .orUpdate(
+            [
+              'item',
+              'intent',
+              'isAutomatic',
+              'isBuyout',
+              'isOffers',
+              'currenciesKeys',
+              'currenciesHalfScrap',
+              'comment',
+              'createdAt',
+              'bumpedAt',
+              'lastSeenAt',
+              'lastCheckedAt',
+              'isDeleted',
+            ],
+            ['id'],
+          )
+          .returning(['firstSeenAt'])
+          .execute();
+
+        // Update firstSeenAt with the actual value
+        listing.firstSeenAt = result.raw[0].firstSeenAt;
+      }
+
+      return filtered;
+    });
+
+    for (let i = 0; i < result.length; i++) {
+      const listing = result[i];
+
+      const exchange = listing.isDeleted
+        ? 'bptf-listing.deleted'
+        : 'bptf-listing.updated';
+      await this.amqpConnection.publish(exchange, '*', listing);
+    }
+
+    return result;
+  }
+
+  @RabbitSubscribe({
     exchange: 'bptf-event.created',
     routingKey: 'listing-update',
     queue: 'saveListingsFromEvents',
@@ -229,7 +351,7 @@ export class ListingService {
     },
     errorHandler: requeueErrorHandler,
   })
-  private saveListingFromEvent(event: ListingEvent): Promise<void> {
+  private saveListingFromEvent(event: ListingEvent): Promise<void | Nack> {
     return this.handleListingEvent(event, false).catch((err) => {
       this.logger.error('Error handling listing update: ' + event.payload.id);
       console.error(err);
@@ -249,7 +371,7 @@ export class ListingService {
     },
     errorHandler: requeueErrorHandler,
   })
-  private deleteListingFromEvent(event: ListingEvent): Promise<void> {
+  private deleteListingFromEvent(event: ListingEvent): Promise<void | Nack> {
     return this.handleListingEvent(event, true).catch((err) => {
       this.logger.error('Error handling listing delete: ' + event.payload.id);
       console.error(err);
@@ -307,75 +429,9 @@ export class ListingService {
       isDeleted,
     });
 
-    if (entity.currenciesHalfScrap > 2147483647) {
-      // Don't save if value is greater than 4 byte integer size (postgres integer type)
-      return null;
-    }
-
-    // Create transaction
-    const result = await this.dataSource.transaction(async (manager) => {
-      // Find existing listing
-      const existingListing = await manager.findOne(Listing, {
-        where: {
-          // Find by id
-          id: listing.id,
-          // and lastSeenAt is less than the event timestamp
-          lastSeenAt: MoreThanOrEqual(entity.lastSeenAt),
-        },
-        lock: {
-          // Lock the row to prevent other processes from querying or updating it
-          mode: 'pessimistic_write',
-        },
-      });
-
-      if (existingListing) {
-        // The listing saved in the database is newer than the event, so we can ignore it
-        return null;
-      }
-
-      // Save the listing, overwrite if it already exists
-      const result = await manager
-        .createQueryBuilder()
-        .insert()
-        .into(Listing)
-        .values(entity)
-        // Don't overwrite firstSeenAt
-        .orUpdate(
-          [
-            'item',
-            'intent',
-            'isAutomatic',
-            'isBuyout',
-            'isOffers',
-            'currenciesKeys',
-            'currenciesHalfScrap',
-            'comment',
-            'createdAt',
-            'bumpedAt',
-            'lastSeenAt',
-            'lastCheckedAt',
-            'isDeleted',
-          ],
-          ['id'],
-        )
-        .returning(['firstSeenAt'])
-        .execute();
-
-      // Update firstSeenAt with the actual value
-      entity.firstSeenAt = result.raw[0].firstSeenAt;
-
-      return entity;
-    });
-
-    if (result) {
-      const exchange = isDeleted
-        ? 'bptf-listing.deleted'
-        : 'bptf-listing.updated';
-
-      await this.amqpConnection.publish(exchange, '*', result);
-    }
-
-    return result;
+    return this.saveListings([entity]).then((listings) =>
+      listings.length === 0 ? null : listings[0],
+    );
   }
 
   /**
@@ -387,14 +443,30 @@ export class ListingService {
   private async handleListingEvent(
     event: ListingEvent,
     isDeleteEvent: boolean,
-  ): Promise<any> {
+  ): Promise<void> {
+    const listing = event.payload;
+
+    if (listing.appid != 440) {
+      // Ignore non-TF2 listings
+      return null;
+    } else if (
+      listing.currencies.keys === undefined &&
+      listing.currencies.metal === undefined
+    ) {
+      // We only want items that are listed for keys and metal
+      return null;
+    } else if (listing.item.quality === null) {
+      // TODO: Validate listings
+      return null;
+    }
+
     // Get ObjectID from event
     const id = ObjectID(event.id);
     // Get timestamp for when the event was created
     const eventTime = id.getTimestamp();
 
     // Save the listing
-    await this.saveListing(event.payload, isDeleteEvent, eventTime);
+    await this.saveListing(listing, isDeleteEvent, eventTime);
   }
 
   private getSKUFromItem(item: Item): string {

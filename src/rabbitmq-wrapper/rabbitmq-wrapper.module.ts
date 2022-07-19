@@ -26,6 +26,14 @@ import { RabbitMQService } from './rabbitmq-wrapper.service';
               name: 'bptf-listing.deleted',
               type: 'fanout',
             },
+            {
+              name: 'bptf-snapshot.created',
+              type: 'fanout',
+            },
+            {
+              name: 'bptf-snapshot.handled',
+              type: 'fanout',
+            },
           ],
           uri: `amqp://${rabbitmqConfig.username}:${rabbitmqConfig.password}@${rabbitmqConfig.host}:${rabbitmqConfig.port}/${rabbitmqConfig.vhost}`,
           prefetchCount: rabbitmqConfig.prefetchCount,
