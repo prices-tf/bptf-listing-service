@@ -2,9 +2,7 @@ import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 import { ListingIntent } from '../enums/listing-intent.enum';
 import { Item } from '../interfaces/bptf.interface';
 
-@Entity({
-  name: 'listing2',
-})
+@Entity()
 @Index(['sku', 'intent', 'isDeleted', 'lastSeenAt'])
 @Index(['lastCheckedAt'])
 export class Listing {
