@@ -47,33 +47,6 @@ export class ListingService {
     private readonly dataSource: DataSource,
   ) {}
 
-  paginate(
-    options: IPaginationOptions,
-    intent?: ListingIntent,
-    isDeleted?: boolean,
-    order = OrderEnum.DESC,
-    orderBy = OrderByEnum.lastSeenAt,
-  ): Promise<Pagination<Listing>> {
-    const where: FindOptionsWhere<Listing> = {};
-
-    if (intent) {
-      where.intent = intent;
-    }
-
-    if (isDeleted !== undefined) {
-      where.isDeleted = isDeleted;
-    }
-
-    const queryBuilder = this.dataSource
-      .createQueryBuilder()
-      .select('listing')
-      .from(Listing, 'listing')
-      .where(where)
-      .orderBy(`"${orderBy}",id`, order);
-
-    return paginate<Listing>(queryBuilder, options);
-  }
-
   paginateBySKU(
     options: IPaginationOptions,
     sku: string,

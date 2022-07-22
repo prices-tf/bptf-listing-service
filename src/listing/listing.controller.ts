@@ -19,28 +19,6 @@ import { Listing } from './models/listing.entity';
 export class ListingController {
   constructor(private readonly listingService: ListingService) {}
 
-  @Get()
-  getListings(
-    @Query(
-      new ValidationPipe({
-        transform: true,
-      }),
-    )
-    query: GetListingsDto,
-  ): Promise<Pagination<Listing>> {
-    return this.listingService.paginate(
-      {
-        page: query.page ?? 1,
-        limit: query.limit ?? 100,
-        countQueries: false,
-      },
-      query.intent,
-      query.deleted,
-      query.order,
-      query.orderBy,
-    );
-  }
-
   @Get('/sku/:sku')
   getListingsBySKU(
     @Param('sku') sku: string,
