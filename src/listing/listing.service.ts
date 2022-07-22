@@ -72,7 +72,7 @@ export class ListingService {
       .select('listing')
       .from(Listing, 'listing')
       .where(where)
-      .orderBy(`"${orderBy}",id`, order);
+      .orderBy(`"${orderBy}"`, order);
 
     return paginate<Listing>(queryBuilder, options);
   }
