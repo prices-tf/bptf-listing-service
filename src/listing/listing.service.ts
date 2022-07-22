@@ -64,15 +64,6 @@ export class ListingService {
       where.isDeleted = isDeleted;
     }
 
-    const searchOptions: FindManyOptions<Listing> = {
-      where,
-      order: {
-        id: order,
-      },
-    };
-
-    searchOptions.order[orderBy] = order;
-
     const queryBuilder = this.dataSource
       .createQueryBuilder()
       .select('listing')
@@ -102,13 +93,6 @@ export class ListingService {
     if (isDeleted !== undefined) {
       where.isDeleted = isDeleted;
     }
-
-    const searchOptions: FindManyOptions<Listing> = {
-      where,
-      order: {},
-    };
-
-    searchOptions.order[orderBy] = order;
 
     const queryBuilder = this.dataSource
       .createQueryBuilder()
