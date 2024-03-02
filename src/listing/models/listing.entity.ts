@@ -1,6 +1,5 @@
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 import { ListingIntent } from '../enums/listing-intent.enum';
-import { Item } from '../interfaces/bptf.interface';
 
 @Entity()
 @Index(['sku', 'intent', 'isDeleted', 'lastSeenAt'])
@@ -22,12 +21,6 @@ export class Listing {
     enum: ListingIntent,
   })
   intent: ListingIntent;
-
-  @Column({
-    type: 'jsonb',
-    select: false,
-  })
-  item: Item;
 
   @Column()
   isAutomatic: boolean;

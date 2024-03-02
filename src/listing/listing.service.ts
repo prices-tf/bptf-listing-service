@@ -195,7 +195,6 @@ export class ListingService {
         id: listing.id,
         sku: listing.sku,
         steamid64: listing.steamid64,
-        item: listing.item,
         intent:
           listing.intent === 'sell' ? ListingIntent.SELL : ListingIntent.BUY,
         isAutomatic: listing.isAutomatic,
@@ -259,7 +258,6 @@ export class ListingService {
           // Don't overwrite firstSeenAt
           .orUpdate(
             [
-              'item',
               'intent',
               'isAutomatic',
               'isBuyout',
@@ -364,7 +362,6 @@ export class ListingService {
       id: listing.id,
       sku,
       steamid64: listing.user.id,
-      item: listing.item,
       intent: listing.intent === 'buy' ? ListingIntent.BUY : ListingIntent.SELL,
       isAutomatic: listing.userAgent !== undefined,
       isBuyout: listing.buyoutOnly ?? true,
