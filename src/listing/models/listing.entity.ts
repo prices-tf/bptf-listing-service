@@ -41,15 +41,6 @@ export class Listing {
   })
   currenciesHalfScrap: number;
 
-  /**
-   * Text comment on the listing
-   */
-  @Column({
-    nullable: true,
-    select: false,
-  })
-  comment: string;
-
   @Column()
   createdAt: Date;
 

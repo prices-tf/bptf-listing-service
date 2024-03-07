@@ -200,7 +200,6 @@ export class ListingService {
         isAutomatic: listing.isAutomatic,
         isBuyout: listing.isBuyout,
         isOffers: listing.isOffers,
-        comment: listing.comment,
         currenciesKeys: listing.currenciesKeys,
         currenciesHalfScrap: listing.currenciesHalfScrap,
         createdAt: new Date(listing.createdAt),
@@ -264,7 +263,6 @@ export class ListingService {
               'isOffers',
               'currenciesKeys',
               'currenciesHalfScrap',
-              'comment',
               'createdAt',
               'bumpedAt',
               'lastSeenAt',
@@ -371,10 +369,6 @@ export class ListingService {
         listing.currencies.metal === undefined
           ? 0
           : Math.round(listing.currencies.metal * 9 * 2),
-      comment:
-        typeof listing.details === 'string'
-          ? listing.details.slice(0, 200)
-          : null,
       createdAt: new Date(listing.listedAt * 1000),
       bumpedAt: new Date(listing.bumpedAt * 1000),
       firstSeenAt: time,
